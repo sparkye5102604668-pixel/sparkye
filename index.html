@@ -537,6 +537,45 @@
   }
 
 
+
+  /* GALLERY */
+  .gallery-section { background: var(--light-gray); }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .gallery-item {
+    aspect-ratio: 1;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: 2px;
+    position: relative;
+    background: #ddd;
+  }
+  .gallery-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    display: block;
+  }
+  .gallery-item:hover img { transform: scale(1.05); }
+  .gallery-item::after {
+    content: '🔍';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 24px;
+    transition: transform 0.2s;
+  }
+  .gallery-item:hover::after { transform: translate(-50%, -50%) scale(1); }
+  @media (max-width: 900px) {
+    .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* ANIMATIONS */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   .hero-text { animation: fadeUp 0.7s ease both; }
@@ -571,6 +610,7 @@
   <ul style="display:flex; gap:28px; list-style:none; align-items:center;">
     <li><a href="#services" style="font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.75);text-decoration:none;">Services</a></li>
     <li><a href="#why-us" style="font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.75);text-decoration:none;">About</a></li>
+    <li><a href="#gallery" style="font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.75);text-decoration:none;">Gallery</a></li>
     <li><a href="#testimonials" style="font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.75);text-decoration:none;">Reviews</a></li>
     <li><a href="https://calendly.com/sparkye5102604668/30min" target="_blank" style="background:transparent;border:1.5px solid rgba(255,255,255,0.4);color:rgba(255,255,255,0.85);font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:8px 20px;border-radius:2px;text-decoration:none;">Book Now</a></li>
     <li><a href="#contact" style="background:var(--blue);color:var(--white);font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:8px 20px;border-radius:2px;text-decoration:none;">Get a Quote</a></li>
@@ -948,6 +988,90 @@
 
 
 
+
+<!-- GALLERY -->
+<section class="gallery-section" id="gallery">
+  <div style="padding: 100px 10% 60px;">
+    <div class="section-header" style="margin-bottom:48px;">
+      <span class="section-tag">Our Work</span>
+      <h2 class="section-title">Project<br>Gallery</h2>
+    </div>
+    <div id="gallery-grid" class="gallery-grid">
+      <div style="grid-column:1/-1; text-align:center; padding:40px; color:#6B6B8A;">
+        <p>Loading photos...</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center;">
+  <button onclick="closeLightbox()" style="position:absolute; top:20px; right:28px; background:none; border:none; color:#fff; font-size:36px; cursor:pointer;">✕</button>
+  <button onclick="prevPhoto()" style="position:absolute; left:20px; background:none; border:none; color:#fff; font-size:48px; cursor:pointer;">‹</button>
+  <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; object-fit:contain; border-radius:4px;">
+  <button onclick="nextPhoto()" style="position:absolute; right:20px; background:none; border:none; color:#fff; font-size:48px; cursor:pointer;">›</button>
+  <div id="lightbox-counter" style="position:absolute; bottom:20px; color:rgba(255,255,255,0.6); font-size:14px;"></div>
+</div>
+
+<script>
+const CLOUD_NAME = 'dgpaijzje';
+let galleryPhotos = [];
+let currentPhoto = 0;
+
+async function loadGallery() {
+  try {
+    const res = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/sparkye.json`);
+    const data = await res.json();
+    const resources = data.resources || [];
+    
+    galleryPhotos = resources.map(r => 
+      `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_800,c_fill,q_auto,f_auto/${r.public_id}`
+    );
+    
+    const grid = document.getElementById('gallery-grid');
+    grid.innerHTML = galleryPhotos.map((url, i) => `
+      <div class="gallery-item" onclick="openLightbox(${i})">
+        <img src="https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,c_fill,q_auto,f_auto/${resources[i].public_id}" 
+             alt="Sparkye work photo ${i+1}" loading="lazy">
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error('Gallery load error:', e);
+    document.getElementById('gallery-grid').innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#6B6B8A;"><p>Photos coming soon!</p></div>';
+  }
+}
+
+function openLightbox(i) {
+  currentPhoto = i;
+  document.getElementById('lightbox-img').src = galleryPhotos[i];
+  document.getElementById('lightbox-counter').textContent = (i+1) + ' / ' + galleryPhotos.length;
+  document.getElementById('lightbox').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function prevPhoto() {
+  currentPhoto = (currentPhoto - 1 + galleryPhotos.length) % galleryPhotos.length;
+  openLightbox(currentPhoto);
+}
+function nextPhoto() {
+  currentPhoto = (currentPhoto + 1) % galleryPhotos.length;
+  openLightbox(currentPhoto);
+}
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') prevPhoto();
+  if (e.key === 'ArrowRight') nextPhoto();
+});
+
+loadGallery();
+</script>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-top">
@@ -969,7 +1093,8 @@
       <h5>Company</h5>
       <ul>
         <li><a href="#why-us">About Us</a></li>
-        <li><a href="#testimonials">Reviews</a></li>
+        <li><a href="#gallery" style="font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.75);text-decoration:none;">Gallery</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
         <li><a href="#contact">Contact</a></li>
         <li><a href="#">Careers</a></li>
       </ul>
